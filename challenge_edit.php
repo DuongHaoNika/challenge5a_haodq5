@@ -9,10 +9,16 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'teacher') {
 
 $message = '';
 
-if (isset($_POST['create_challenge'])) {
+if(!isset($_GET['challenge_id'])) {
+    die("Challenge id?");
+}
+
+$chall_id = $_GET["challenge_id"];
+
+
+if (isset($_POST['challenge_edit'])) {
     $teacher_id = $_SESSION['user']['id'];
     $challenge_hint = $conn->real_escape_string($_POST['challenge_hint']);
-    
     if (isset($_FILES['challenge_file']) && $_FILES['challenge_file']['error'] == 0) {
         $upload_dir = 'uploads/challenges/';
         if (!is_dir($upload_dir)) {
@@ -26,10 +32,9 @@ if (isset($_POST['create_challenge'])) {
             // Escape chuỗi để an toàn trong SQL
             $file_content = $conn->real_escape_string($file_content_raw);
             
-            $sql = "INSERT INTO challenges (teacher_id, challenge_hint, file_path, file_content)
-                    VALUES ($teacher_id, '$challenge_hint', '$target', '$file_content')";
+            $sql = "UPDATE challenges WHERE id=$chall_id SET challenge_hint=$challenge_hint, file_path='$target', file_content='$file_content')";
             if ($conn->query($sql)) {
-                $message = "Challenge created successfully!";
+                $message = "Challenge updated successfully!";
             } else {
                 $message = "Database error: " . $conn->error;
             }
@@ -39,7 +44,6 @@ if (isset($_POST['create_challenge'])) {
     } else {
         $message = "Please select a challenge file to upload.";
     }
-    
 }
 ?>
 <!DOCTYPE html>
@@ -138,13 +142,14 @@ if (isset($_POST['create_challenge'])) {
     <div class="challenge-form">
         <h2>Tạo Challenge</h2>
         <form method="post" enctype="multipart/form-data">
+            <input type="text" name="id" value="<?php echo $chall_id ?>" hidden>
             <label for="challenge_hint">Gợi ý Challenge:</label>
             <textarea name="challenge_hint" id="challenge_hint" rows="4" placeholder="Nhập gợi ý cho challenge" required></textarea>
             
             <label for="challenge_file">File Challenge (txt):</label>
             <input type="file" name="challenge_file" id="challenge_file" accept=".txt" required>
             
-            <input type="submit" name="create_challenge" value="Tạo Challenge">
+            <input type="submit" name="challenge_edit" value="Submit">
         </form>
     </div>
 </div>
