@@ -1,0 +1,275 @@
+/* Reset CSS cơ bản */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Phông chữ, màu nền tổng thể */
+body {
+    font-family: Arial, sans-serif;
+    background: #e9ecef; /* Màu xám nhạt hơn */
+}
+
+/* Khung chính cho nội dung */
+.container {
+    max-width: 1000px;
+    margin: 30px auto;
+    padding: 20px;
+    background: #fff;               /* Nền trắng cho phần nội dung */
+    border-radius: 8px;            /* Bo góc nhẹ */
+    border: 1px solid #ddd;        /* Viền nhạt */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Đổ bóng nhẹ */
+}
+
+/* Header với màu xanh và bố cục Flex */
+header {
+    background: #007bff;
+    color: #fff;
+    padding: 15px 20px;
+    border-radius: 5px;
+    display: flex;
+    justify-content: space-between; /* Tách phần tiêu đề và nav sang 2 bên */
+    align-items: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* Đổ bóng nhẹ cho header */
+}
+header h1 {
+    font-size: 24px;
+    font-weight: normal;
+    margin-right: 20px;
+}
+
+/* Thanh điều hướng (menu) */
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 15px; /* Khoảng cách giữa các item */
+}
+nav ul li {
+    margin: 0; /* Xóa margin mặc định */
+}
+nav ul li a {
+    color: #fff;
+    text-decoration: none;
+    font-weight: bold;
+    padding: 8px 12px;
+    border-radius: 4px;
+    transition: background 0.3s;
+}
+nav ul li a:hover {
+    background: rgba(255, 255, 255, 0.2); /* Hiệu ứng hover nhạt */
+}
+
+/* Vùng nội dung chính */
+.content {
+    margin-top: 30px;
+}
+.content h2 {
+    margin-bottom: 15px;
+    font-size: 20px;
+}
+
+/* Bảng bài tập */
+.assignment-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 15px;
+    background: #fff;
+}
+.assignment-table th,
+.assignment-table td {
+    border: 1px solid #ddd;
+    padding: 10px;
+    text-align: left;
+}
+.assignment-table th {
+    background: #f2f2f2;
+}
+
+/* Định dạng chung cho nút bấm */
+.button {
+    display: inline-block;      /* Đảm bảo nút không bị chồng */
+    padding: 8px 12px;
+    background: #007bff;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    text-decoration: none;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.3s;
+    margin-right: 5px; /* Thêm chút khoảng cách phải nếu nhiều nút liền kề */
+}
+.button:hover {
+    background: #0056b3;
+}
+
+/* Danh sách quản lý dành cho giáo viên (hiển thị ngang thay vì chồng) */
+.management-list {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+    display: flex;
+    gap: 10px; /* Khoảng cách giữa các mục */
+}
+.management-list li {
+    margin: 0; /* Xóa margin mặc định */
+}
+
+/* ---------- CSS CHO TRANG LOGIN (nếu dùng chung file) ---------- */
+.login-container {
+    width: 350px;
+    margin: 70px auto;
+    padding: 20px;
+    background: #fff;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+}
+.login-container h2 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+.login-form label {
+    display: block;
+    margin: 10px 0 5px;
+    color: #555;
+}
+.login-form input[type="text"],
+.login-form input[type="password"] {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+.login-form input[type="submit"] {
+    width: 100%;
+    margin-top: 20px;
+    padding: 12px;
+    background: #007bff;
+    border: none;
+    border-radius: 5px;
+    color: #fff;
+    font-size: 15px;
+    cursor: pointer;
+}
+.login-form input[type="submit"]:hover {
+    background: #0056b3;
+}
+.message {
+    margin-top: 15px;
+    text-align: center;
+    color: red;
+    font-weight: bold;
+}
+.footer {
+    text-align: center;
+    margin-top: 10px;
+    color: #888;
+    font-size: 14px;
+}
+.footer a {
+    color: #007bff;
+    text-decoration: none;
+}
+.footer a:hover {
+    text-decoration: underline;
+}
+
+/* ĐỊNH DẠNG CHO assignment_list.php */
+
+/* Danh sách bài tập (UL) */
+.assignment-list {
+    list-style: none;
+    padding: 0;
+    margin: 20px 0;
+}
+
+/* Mỗi bài tập (LI) */
+.assignment-list li {
+    background: #fff;
+    margin-bottom: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    padding: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+/* Tiêu đề bài tập */
+.assignment-list li strong {
+    font-size: 16px;
+    color: #333;
+}
+
+/* Deadline (dùng thẻ <em>) */
+.assignment-list li em {
+    color: #666;
+}
+
+/* Form upload assignment */
+.upload-form {
+    display: flex;
+    flex-direction: column;
+    max-width: 600px;
+    margin-top: 20px;
+}
+.upload-form label {
+    margin: 10px 0 5px;
+    font-weight: bold;
+}
+.upload-form input[type="text"],
+.upload-form input[type="datetime-local"],
+.upload-form input[type="file"],
+.upload-form textarea {
+    padding: 8px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+}
+.upload-form .button {
+    width: 150px; /* hoặc tuỳ chỉnh */
+    margin-top: 15px;
+}
+
+/* Thông báo (message) */
+.message {
+    background: #dff0d8; /* Xanh nhạt nếu success */
+    border: 1px solid #c3e6cb;
+    color: #3c763d;
+    padding: 10px;
+    border-radius: 4px;
+    margin-bottom: 15px;
+    font-weight: bold;
+}
+
+.profile-container {
+    position: relative; /* Để nút Edit có thể đặt absolute bên trong */
+    max-width: 800px;
+    margin: 20px auto;
+    padding: 20px;
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+  
+  .edit-profile-btn {
+    position: absolute; 
+    top: 20px;         /* hoặc điều chỉnh theo ý muốn */
+    right: 20px;       /* vị trí góc bên phải trên */
+    background: #ffc107;
+    color: #fff;
+    padding: 8px 16px;
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 14px;
+    transition: background 0.3s;
+  }
+  
+  .edit-profile-btn:hover {
+    background: #e0a800;
+  }
+  
+  /* Các style còn lại cho avatar, .profile-header, .profile-info... */
+  
+
