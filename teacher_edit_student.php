@@ -10,22 +10,44 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'teacher') {
 // Xử lý cập nhật và xóa sinh viên
 if (isset($_POST['delete'])) {
     $student_id = intval($_POST['student_id']);
-    $sql = "DELETE FROM users WHERE id = $student_id AND role='student'";
-    $conn->query($sql);
-    $message = "Student deleted.";
+
+    $stmt = $conn->prepare("DELETE FROM users WHERE id = ? AND role = 'student'");
+    if ($stmt === false) {
+        die("Prepare failed: " . $conn->error);
+    }
+
+    $stmt->bind_param("i", $student_id);
+
+    if ($stmt->execute()) {
+        $message = "Student deleted.";
+    } else {
+        $message = "Error deleting student: " . $stmt->error;
+    }
+
+    $stmt->close();
 }
 
 if (isset($_POST['update'])) {
     $student_id = intval($_POST['student_id']);
-    $name = $conn->real_escape_string($_POST['name']);
-    $email = $conn->real_escape_string($_POST['email']);
-    $phone = $conn->real_escape_string($_POST['phone']);
-    $sql = "UPDATE users SET email='$email', phone='$phone', full_name='$name' WHERE id = $student_id AND role='student'";
-    if ($conn->query($sql)) {
+    $name = $_POST['name'];
+    $email = $_POST['email'];
+    $phone = $_POST['phone'];
+
+    $stmt = $conn->prepare("UPDATE users SET email = ?, phone = ?, full_name = ? WHERE id = ? AND role = 'student'");
+    if ($stmt === false) {
+        die("Prepare failed: " . $conn->error);
+    }
+
+    $stmt->bind_param("sssi", $email, $phone, $name, $student_id);
+
+    if ($stmt->execute()) {
         $message = "Student info updated.";
     } else {
-        $message = "Error updating student info.";
+        $message = "Error updating student info: " . $stmt->error;
     }
+
+    $stmt->close();
+
 }
 
 $student_id_param = '';
@@ -134,7 +156,6 @@ $row = $res->fetch_assoc();
     <div class="edit-form">
         <h2>Cập nhật / Xóa Sinh viên</h2>
         <form method="post">
-            <label for="student_id">Mã sinh viên</label>
             <input type="text" name="student_id" id="student_id" value="<?php echo htmlspecialchars($student_id_param); ?>" hidden required>
             
             <label for="name">Name</label>

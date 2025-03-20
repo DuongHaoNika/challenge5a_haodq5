@@ -23,21 +23,65 @@ if (isset($_POST['update_profile'])) {
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0755, true);
         }
-        $filename = basename($_FILES['avatar']['name']);
-        $target = $upload_dir . $filename;
-        if (move_uploaded_file($_FILES['avatar']['tmp_name'], $target)) {
-            $sql = "UPDATE users SET avatar='$target' WHERE id=$user_id";
-            $conn->query($sql);
+    
+        $filename = $_FILES['avatar']['name'];
+        $file_tmp = $_FILES['avatar']['tmp_name'];
+        $file_size = $_FILES['avatar']['size'];
+        $file_type = $_FILES['avatar']['type'];
+        $file_ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+    
+        // Danh sách các định dạng cho phép
+        $allowed_extensions = array('jpg', 'jpeg', 'png');
+    
+        // Kiểm tra phần mở rộng của file
+        if (in_array($file_ext, $allowed_extensions)) {
+            // Kiểm tra loại MIME
+            $allowed_mime_types = array('image/jpeg', 'image/png');
+            if (in_array($file_type, $allowed_mime_types)) {
+                // Kiểm tra nội dung file
+                if (getimagesize($file_tmp)) {
+                    // Giới hạn kích thước file (ví dụ: 5MB)
+                    if ($file_size <= 5 * 1024 * 1024) {
+                        // Đổi tên file để tránh xung đột
+                        $new_filename = uniqid('', true) . '.' . $file_ext;
+                        $target = $upload_dir . $new_filename;
+    
+                        // Di chuyển file vào thư mục đích
+                        if (move_uploaded_file($file_tmp, $target)) {
+                            // Cập nhật avatar trong cơ sở dữ liệu
+                            $sql = "UPDATE users SET avatar='$target' WHERE id=$user_id";
+                            if ($conn->query($sql)) {
+                                echo "Avatar uploaded successfully.";
+                            } else {
+                                echo "Database update failed.";
+                            }
+                        } else {
+                            echo "Failed to move uploaded file.";
+                        }
+                    } else {
+                        echo "File size is too large. Maximum size is 5MB.";
+                    }
+                } else {
+                    echo "File is not a valid image.";
+                }
+            } else {
+                echo "Invalid file type.";
+            }
+        } else {
+            echo "Invalid file extension. Only JPG, JPEG, PNG are allowed.";
         }
     } else if (!empty($_POST['avatar_url'])) {
         // Cập nhật avatar theo URL
         $avatar_url = $conn->real_escape_string($_POST['avatar_url']);
         $sql = "UPDATE users SET avatar='$avatar_url' WHERE id=$user_id";
-        $conn->query($sql);
+        if ($conn->query($sql)) {
+            echo "Avatar URL updated successfully.";
+        } else {
+            echo "Database update failed.";
+        }
     }
     
     $message = "Profile updated.";
-    // (Bạn có thể cập nhật lại session nếu cần)
 }
 ?>
 <!DOCTYPE html>
@@ -114,7 +158,7 @@ if (isset($_POST['update_profile'])) {
         <nav>
             <ul>
                 <li><a href="index.php">Trang chủ</a></li>
-                <li><a href="assignment_list.php">Bài tập</a></li>
+                <li><a href="teacher_assignments.php">Bài tập</a></li>
                 <li><a href="logout.php">Đăng xuất</a></li>
             </ul>
         </nav>

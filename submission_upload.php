@@ -11,29 +11,88 @@ $assignment_id = intval($_GET['assignment_id']);
 $message = '';
 
 if (isset($_POST['submit_assignment'])) {
-    $student_id = $_SESSION['user']['id'];
-    if (isset($_FILES['submission_file']) && $_FILES['submission_file']['error'] == 0) {
-        $upload_dir = 'uploads/submissions/';
-        if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0755, true);
+    // Lấy assignment_id từ GET, vì URL chứa ?assignment_id=3
+    $assignment_id = intval($_GET['assignment_id']); 
+    $student_id = intval($_SESSION['user']['id']);
+
+    // Kiểm tra hạn nộp của bài tập
+    $stmt = $conn->prepare("SELECT deadline FROM assignments WHERE id = ?");
+    if ($stmt === false) {
+        $message = "Prepare failed: " . $conn->error;
+    } else {
+        $stmt->bind_param("i", $assignment_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        if ($result->num_rows == 0) {
+            $message = "Bài tập không tồn tại.";
+        } else {
+            $assignment = $result->fetch_assoc();
+            $deadline = $assignment['deadline'];
+            $currentDate = new DateTime();
+            $deadlineDate = new DateTime($deadline);
+            if ($currentDate > $deadlineDate) {
+                $message = "Deadline đã qua, không thể nộp bài.";
+            }
         }
-        $filename = basename($_FILES['submission_file']['name']);
-        $target = $upload_dir . $filename;
-        if (move_uploaded_file($_FILES['submission_file']['tmp_name'], $target)) {
-            $sql = "INSERT INTO submissions (assignment_id, student_id, file_path)
-                    VALUES ($assignment_id, $student_id, '$target')";
-            if ($conn->query($sql) === TRUE) {
-                $message = "Bài làm đã được nộp thành công!";
+        $stmt->close();
+    }
+
+    // Nếu deadline chưa qua, tiếp tục xử lý upload file
+    if (empty($message)) {
+        if (isset($_FILES['submission_file']) && $_FILES['submission_file']['error'] == 0) {
+            $upload_dir = 'uploads/submissions/';
+            if (!is_dir($upload_dir)) {
+                mkdir($upload_dir, 0755, true);
+            }
+            
+            $original_filename = basename($_FILES['submission_file']['name']);
+            $ext = strtolower(pathinfo($original_filename, PATHINFO_EXTENSION));
+            $allowed_ext = array('txt', 'pdf');
+            $stmt = $conn->prepare("SELECT * FROM submissions WHERE assignment_id = ? AND student_id = ?");
+            if ($stmt === false) {
+                $message = "Prepare failed: " . $conn->error;
             } else {
-                $message = "Lỗi khi lưu vào CSDL: " . $conn->error;
+                $stmt->bind_param("ii", $assignment_id, $student_id);
+                $stmt->execute();
+                
+                $stmt->store_result(); 
+                
+                if ($stmt->num_rows > 0) {
+                    die("Sinh viên không thể submit nữa");
+                }
+            }
+            if (!in_array($ext, $allowed_ext)) {
+                $message = "Chỉ cho phép upload file định dạng txt hoặc pdf.";
+            } else {
+                // Đổi tên file để đảm bảo tính duy nhất
+                $new_filename = uniqid() . '.' . $ext;
+                $target = $upload_dir . $new_filename;
+                
+                if (move_uploaded_file($_FILES['submission_file']['tmp_name'], $target)) {
+                    // Sử dụng prepared statement để chèn dữ liệu an toàn
+                    $stmt = $conn->prepare("INSERT INTO submissions (assignment_id, student_id, file_path) VALUES (?, ?, ?)");
+                    if ($stmt === false) {
+                        $message = "Prepare failed: " . $conn->error;
+                    } else {
+                        $stmt->bind_param("iis", $assignment_id, $student_id, $target);
+                        if ($stmt->execute()) {
+                            $message = "Bài làm đã được nộp thành công!";
+                        } else {
+                            $message = "Lỗi khi lưu vào CSDL: " . $stmt->error;
+                        }
+                        $stmt->close();
+                    }
+                } else {
+                    $message = "Không thể upload file.";
+                }
             }
         } else {
-            $message = "Không thể upload file.";
+            $message = "Bạn chưa chọn file hoặc file bị lỗi.";
         }
-    } else {
-        $message = "Bạn chưa chọn file hoặc file bị lỗi.";
     }
 }
+
+
 ?>
 <!DOCTYPE html>
 <html lang="vi">
@@ -108,7 +167,7 @@ if (isset($_POST['submit_assignment'])) {
         <nav>
             <ul>
                 <li><a href="index.php">Trang chủ</a></li>
-                <li><a href="assignment_list.php">Bài tập</a></li>
+                <li><a href="index.php?view=assignments">Bài tập</a></li>
                 <li><a href="student_profile.php">Hồ sơ</a></li>
                 <li><a href="logout.php">Đăng xuất</a></li>
             </ul>

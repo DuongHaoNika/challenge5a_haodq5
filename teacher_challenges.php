@@ -2,29 +2,38 @@
 session_start();
 include('config.php');
 
-// Chỉ giáo viên mới được vào
-if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'teacher') {
-    die("Access denied.");
+// Kiểm tra quyền giáo viên
+if (!isset($_SESSION['user'])) {
+    header('Location: login.php');
+    exit;
+}
+$user = $_SESSION['user'];
+if ($user['role'] != 'teacher') {
+    die("Truy cập bị từ chối!");
 }
 
+// Xử lý thêm challenge
 $message = '';
+if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['create_challenge'])) {
+    // ... (giữ nguyên phần xử lý tạo challenge của bạn)
+}
 
-// Xử lý xóa challenge (nếu có)
-if (isset($_POST['delete_challenge']) && isset($_POST['challenge_id'])) {
-    $challenge_id = intval($_POST['challenge_id']);
-    // Xóa challenge
-    $sql_delete = "DELETE FROM challenges WHERE id = $challenge_id";
-    if ($conn->query($sql_delete)) {
-        $message = "Đã xóa challenge thành công.";
+// Xử lý xóa challenge
+if (isset($_GET['delete_id'])) {
+    $challenge_id = (int)$_GET['delete_id'];
+    $sql = "DELETE FROM challenges WHERE id = $challenge_id AND teacher_id = {$user['id']}";
+    if ($conn->query($sql)) {
+        $message = "Xóa challenge thành công!";
     } else {
-        $message = "Lỗi khi xóa challenge: " . $conn->error;
+        $message = "Lỗi khi xóa: " . $conn->error;
     }
 }
 
 // Lấy danh sách challenge
-$sql_ch = "SELECT * FROM challenges ORDER BY created_at DESC";
-$result_ch = $conn->query($sql_ch);
+$sql = "SELECT * FROM challenges WHERE teacher_id = {$user['id']}";
+$result = $conn->query($sql);
 ?>
+
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -32,115 +41,122 @@ $result_ch = $conn->query($sql_ch);
     <title>Quản lý Challenge</title>
     <link rel="stylesheet" href="public/style.css">
     <style>
-        .challenge-table {
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+        }
+        .add-button {
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+        }
+        table {
             width: 100%;
             border-collapse: collapse;
             margin-top: 20px;
         }
-        .challenge-table th,
-        .challenge-table td {
+        th, td {
             border: 1px solid #ddd;
-            padding: 10px;
+            padding: 12px;
+            text-align: left;
         }
-        .challenge-table th {
-            background: #f2f2f2;
+        th {
+            background-color: #f8f9fa;
         }
-        .action-cell {
-            white-space: nowrap;
-        }
-        .action-cell form {
-            display: inline-block;
-            margin: 0;
-        }
-        .action-cell form input[type="submit"] {
-            background: #dc3545;
-            border: none;
-            color: #fff;
-            padding: 6px 12px;
-            border-radius: 4px;
-            cursor: pointer;
-            margin-left: 5px;
-            transition: background 0.3s;
-        }
-        .action-cell form input[type="submit"]:hover {
-            background: #c82333;
-        }
-        /* Nút "Thêm Challenge" bên trái */
-        .top-bar {
-            display: flex;
-            justify-content: flex-start; /* canh trái */
-            align-items: center;
-            margin-top: 20px;
-        }
-        .top-bar a.button {
+        .action-link {
+            color: #007bff;
+            text-decoration: none;
             margin-right: 10px;
+        }
+        .action-link.delete {
+            color: #dc3545;
+        }
+        .message {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+            color: #155724;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+            color: #721c24;
         }
     </style>
 </head>
 <body>
-<div class="container">
-    <header>
-        <h1>Quản lý Challenge</h1>
-        <nav>
-            <ul>
-                <li><a href="index.php">Trang chủ</a></li>
-                <li><a href="teacher_assignment_upload.php">Giao bài tập</a></li>
-                <li><a href="manage_student.php">Quản lý SV</a></li>
-                <li><a href="logout.php">Đăng xuất</a></li>
-            </ul>
-        </nav>
-    </header>
-    
-    <?php if (!empty($message)): ?>
-        <div class="message"><?php echo htmlspecialchars($message); ?></div>
-    <?php endif; ?>
+    <div class="container">
+        <header>
+            <h1>Challenges</h1>
+            <nav>
+                <ul>
+                    <li><a href="index.php">Trang chủ</a></li>
+                    <li><a href="challenge_create.php" class="add-button">+ Thêm Challenge</a></li>
+                    <li><a href="logout.php">Đăng xuất</a></li>
+                </ul>
+            </nav>
+        </header>
 
-    <div class="content">
-        <div class="top-bar">
-            <!-- Nút Thêm Challenge nằm bên trái -->
-            <a class="button" href="challenge_create.php">Thêm Challenge</a>
-        </div>
+        <?php if (!empty($message)): ?>
+            <div class="message <?= strpos($message, 'thành công') !== false ? 'success' : 'error' ?>">
+                <?= htmlspecialchars($message) ?>
+            </div>
+        <?php endif; ?>
 
-        <h2>Danh sách Challenge</h2>
-        <?php if ($result_ch && $result_ch->num_rows > 0): ?>
-            <table class="challenge-table">
-                <thead>
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>File Path</th>
+                    <th>Submissions</th>
+                    <th>Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                <?php while ($row = $result->fetch_assoc()): ?>
                     <tr>
-                        <th>ID</th>
-                        <th>Gợi ý</th>
-                        <th>File Path</th>
-                        <th>Ngày tạo</th>
-                        <th>Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php while ($row = $result_ch->fetch_assoc()): ?>
-                    <tr>
-                        <td><?php echo $row['id']; ?></td>
-                        <td><?php echo nl2br(htmlspecialchars($row['challenge_hint'])); ?></td>
-                        <td><?php echo htmlspecialchars($row['file_path']); ?></td>
-                        <td><?php echo htmlspecialchars($row['created_at']); ?></td>
-                        <td class="action-cell">
-                            <!-- Nút Sửa -->
-                            <a class="button" 
-                               href="challenge_edit.php?challenge_id=<?php echo $row['id']; ?>">
-                               Sửa
+                        <td><?= htmlspecialchars($row['id']) ?></td>
+                        <td><?= htmlspecialchars($row['file_path']) ?></td>
+                        <td>
+                            <a href="view_submissions.php?challenge_id=<?= $row['id'] ?>" 
+                               class="action-link">
+                                Xem submissions (<?= get_submission_count($row['id']) ?>)
                             </a>
-                            <!-- Nút Xóa (form POST) -->
-                            <form method="post" 
-                                  onsubmit="return confirm('Bạn có chắc chắn muốn xóa challenge này?');">
-                                <input type="hidden" name="challenge_id" value="<?php echo $row['id']; ?>">
-                                <input type="submit" name="delete_challenge" value="Xóa">
-                            </form>
+                        </td>
+                        <td>
+                            <a href="?delete_id=<?= $row['id'] ?>" 
+                               class="action-link delete" 
+                               onclick="return confirm('Bạn chắc chắn muốn xóa?')">
+                                Xóa
+                            </a>
                         </td>
                     </tr>
                 <?php endwhile; ?>
-                </tbody>
-            </table>
-        <?php else: ?>
-            <p>Chưa có challenge nào.</p>
-        <?php endif; ?>
+            </tbody>
+        </table>
     </div>
-</div>
 </body>
 </html>
+
+<?php
+// Hàm đếm số lượng submission
+function get_submission_count($challenge_id) {
+    global $conn;
+    $sql = "SELECT COUNT(*) as count FROM challenge_attempts WHERE challenge_id = $challenge_id";
+    $result = $conn->query($sql);
+    return $result->fetch_assoc()['count'];
+}
+?>

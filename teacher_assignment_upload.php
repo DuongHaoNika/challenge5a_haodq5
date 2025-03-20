@@ -19,24 +19,36 @@ if (isset($_POST['upload_assignment'])) {
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0777, true);
         }
-        $filename = basename($_FILES['assignment_file']['name']);
-        $target = $upload_dir . $filename;
-        if (move_uploaded_file($_FILES['assignment_file']['tmp_name'], $target)) {
-            $sql = "INSERT INTO assignments (teacher_id, title, description, file_path, deadline)
-                    VALUES ($teacher_id, '$title', '$description', '$target', '$deadline')";
-
-            if ($conn->query($sql) === TRUE) {
-                $message = "Assignment uploaded successfully!";
-            } else {
-                $message = "Error: " . $conn->error;
-            }
+        // Lấy phần mở rộng của file từ tên gốc
+        $original_filename = basename($_FILES['assignment_file']['name']);
+        $ext = strtolower(pathinfo($original_filename, PATHINFO_EXTENSION));
+        // Chỉ cho phép file txt và pdf
+        $allowed_ext = array('txt', 'pdf');
+        
+        if (!in_array($ext, $allowed_ext)) {
+            $message = "Chỉ cho phép upload file txt hoặc pdf.";
         } else {
-            $message = "File upload failed.";
+            // Đổi tên file thành dạng UID
+            $new_filename = uniqid() . '.' . $ext;
+            $target = $upload_dir . $new_filename;
+            if (move_uploaded_file($_FILES['assignment_file']['tmp_name'], $target)) {
+                $sql = "INSERT INTO assignments (teacher_id, title, description, file_path, deadline)
+                        VALUES ($teacher_id, '$title', '$description', '$target', '$deadline')";
+    
+                if ($conn->query($sql) === TRUE) {
+                    $message = "Assignment uploaded successfully!";
+                } else {
+                    $message = "Error: " . $conn->error;
+                }
+            } else {
+                $message = "File upload failed.";
+            }
         }
     } else {
         $message = "Please select a file to upload.";
     }
 }
+
 ?>
 <!DOCTYPE html>
 <html lang="vi">

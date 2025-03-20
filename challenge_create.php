@@ -10,37 +10,52 @@ if (!isset($_SESSION['user']) || $_SESSION['user']['role'] != 'teacher') {
 $message = '';
 
 if (isset($_POST['create_challenge'])) {
-    $teacher_id = $_SESSION['user']['id'];
-    $challenge_hint = $conn->real_escape_string($_POST['challenge_hint']);
+    $teacher_id = intval($_SESSION['user']['id']);
+    $challenge_hint = $_POST['challenge_hint'];
     
     if (isset($_FILES['challenge_file']) && $_FILES['challenge_file']['error'] == 0) {
         $upload_dir = 'uploads/challenges/';
         if (!is_dir($upload_dir)) {
             mkdir($upload_dir, 0755, true);
         }
+        
         $filename = basename($_FILES['challenge_file']['name']);
-        $target = $upload_dir . $filename;
-        if (move_uploaded_file($_FILES['challenge_file']['tmp_name'], $target)) {
-            // Đọc nội dung file txt
-            $file_content_raw = file_get_contents($target);
-            // Escape chuỗi để an toàn trong SQL
-            $file_content = $conn->real_escape_string($file_content_raw);
-            
-            $sql = "INSERT INTO challenges (teacher_id, challenge_hint, file_path, file_content)
-                    VALUES ($teacher_id, '$challenge_hint', '$target', '$file_content')";
-            if ($conn->query($sql)) {
-                $message = "Challenge created successfully!";
-            } else {
-                $message = "Database error: " . $conn->error;
-            }
+        $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+        
+        // Chỉ cho phép file có định dạng txt
+        if ($ext !== 'txt') {
+            $message = "Chỉ cho phép upload file định dạng txt.";
         } else {
-            $message = "File upload failed.";
+            // Đổi tên file theo UID để tránh trùng lặp
+            $target = $upload_dir . $filename;
+            
+            if (move_uploaded_file($_FILES['challenge_file']['tmp_name'], $target)) {
+                // Đọc nội dung file txt
+                $file_content_raw = file_get_contents($target);
+                
+                // Sử dụng prepared statement để chèn dữ liệu, tránh SQL Injection
+                $stmt = $conn->prepare("INSERT INTO challenges (teacher_id, challenge_hint, file_path, file_content) VALUES (?, ?, ?, ?)");
+                if ($stmt === false) {
+                    $message = "Prepare failed: " . $conn->error;
+                } else {
+                    $stmt->bind_param("isss", $teacher_id, $challenge_hint, $target, $file_content_raw);
+                    if ($stmt->execute()) {
+                        $message = "Challenge created successfully!";
+                    } else {
+                        $message = "Database error: " . $stmt->error;
+                    }
+                    $stmt->close();
+                }
+            } else {
+                $message = "File upload failed.";
+            }
         }
     } else {
         $message = "Please select a challenge file to upload.";
     }
-    
 }
+
+
 ?>
 <!DOCTYPE html>
 <html lang="vi">

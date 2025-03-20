@@ -1,0 +1,40 @@
+version: '3.8'
+
+services:
+  # Dịch vụ PHP với Apache
+  web:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www/html
+    networks:
+      - app-network
+    depends_on:
+      - db
+    restart: always
+
+  # Dịch vụ MySQL
+  db:
+    image: mysql:5.7
+    environment:
+      MYSQL_ROOT_PASSWORD: 111111
+      MYSQL_DATABASE: challenge5a  # Tên database mặc định
+      MYSQL_USER: dqh
+      MYSQL_PASSWORD: 111111
+    ports:
+      - "3307:3306"
+    volumes:
+      - db-data:/var/lib/mysql
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql  # Mount file SQL để tự động chạy
+    networks:
+      - app-network
+    restart: always
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db-data:
+    driver: local

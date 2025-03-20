@@ -97,6 +97,7 @@ $result = $conn->query($sql);
                 <th>Deadline</th>
                 <th>File</th>
                 <th>Thao tác</th>
+                <th>Submissions</th>
             </tr>
         </thead>
         <tbody>
@@ -125,6 +126,9 @@ $result = $conn->query($sql);
                             <input type="hidden" name="assignment_id" value="<?php echo $row['id']; ?>">
                             <input type="submit" name="delete" value="Xóa">
                         </form>
+                    </td>
+                    <td>
+                        <a class="button" href="/teacher_view_submissions.php?assignment_id=<?php echo $row['id'] ?>">Xem bai lam</a>
                     </td>
                 </tr>
             <?php endwhile; ?>

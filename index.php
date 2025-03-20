@@ -12,55 +12,95 @@ $user = $_SESSION['user'];
 
 // Biến $view xác định đang xem phần nào: assignments / challenge / default
 $view = isset($_GET['view']) ? $_GET['view'] : '';
-
 ?>
 <!DOCTYPE html>
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
   <title>Trang Chủ</title>
-  <!-- Liên kết tới file CSS trong thư mục public -->
   <link rel="stylesheet" href="public/style.css">
   <style>
-    /* Style cho 2 ô (cards) hiển thị Assignment/Challenge */
+    /* Container cho các card */
     .card-container {
       display: flex;
       gap: 20px;
       margin-top: 30px;
+      justify-content: center;
+      flex-wrap: wrap;
     }
+
     .card {
-      flex: 1;
       background: #fff;
       border: 1px solid #ddd;
       border-radius: 8px;
       padding: 20px;
       text-align: center;
+      width: 220px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.1);
       transition: background 0.3s;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-decoration: none;
     }
+
     .card:hover {
       background: #f9f9f9;
     }
+
     .card h3 {
       margin-bottom: 10px;
       font-size: 18px;
     }
-    .card a.button {
-      margin-top: 10px;
-      display: inline-block;
+
+    .card p {
+      font-size: 14px;
+      color: #666;
+      margin-bottom: 20px;
     }
-    .challenge-table {
+
+    .card a.button {
+      background: #007bff;
+      color: white;
+      padding: 10px 20px;
+      text-decoration: none;
+      border-radius: 5px;
+      font-size: 14px;
+    }
+
+    .card a.button:hover {
+      background: #0056b3;
+    }
+
+    /* Styling cho bảng danh sách bài tập và challenge */
+    table {
       width: 100%;
       border-collapse: collapse;
-      margin-top: 15px;
+      margin-top: 30px;
     }
-    .challenge-table th,
-    .challenge-table td {
+
+    table th, table td {
+      padding: 12px;
+      text-align: left;
       border: 1px solid #ddd;
-      padding: 10px;
     }
-    .challenge-table th {
-      background: #f2f2f2;
+
+    table th {
+      background-color: #f4f4f4;
+    }
+
+    .status {
+      font-weight: bold;
+    }
+
+    .status.correct {
+      color: green;
+    }
+
+    .status.incorrect {
+      color: red;
     }
   </style>
 </head>
@@ -76,9 +116,10 @@ $view = isset($_GET['view']) ? $_GET['view'] : '';
         </ul>
       </nav>
     </header>
+
     <div class="content">
       <?php if ($user['role'] == 'student'): ?>
-        
+
         <!-- Kiểm tra xem đang xem phần nào qua $_GET['view'] -->
         <?php if ($view == 'assignments'): ?>
           <!-- Hiển thị danh sách Bài tập -->
@@ -95,7 +136,7 @@ $view = isset($_GET['view']) ? $_GET['view'] : '';
             
             if ($result && $result->num_rows > 0):
           ?>
-            <table class="assignment-table">
+            <table>
               <tr>
                 <th>Tiêu đề</th>
                 <th>Mô tả</th>
@@ -103,6 +144,7 @@ $view = isset($_GET['view']) ? $_GET['view'] : '';
                 <th>File</th>
                 <th>Thao tác</th>
                 <th>Trạng thái</th>
+                
               </tr>
               <?php while ($row = $result->fetch_assoc()): ?>
                 <tr>
@@ -121,12 +163,8 @@ $view = isset($_GET['view']) ? $_GET['view'] : '';
                       Nộp bài
                     </a>
                   </td>
-                  <td>
-                    <?php if ($row['submission_id']): ?>
-                      <span style="color: green; font-weight: bold;">Đã nộp</span>
-                    <?php else: ?>
-                      <span style="color: red; font-weight: bold;">Chưa nộp</span>
-                    <?php endif; ?>
+                  <td class="status <?php echo ($row['submission_id']) ? 'correct' : 'incorrect'; ?>">
+                    <?php echo ($row['submission_id']) ? 'Đã nộp' : 'Chưa nộp'; ?>
                   </td>
                 </tr>
               <?php endwhile; ?>
@@ -139,27 +177,50 @@ $view = isset($_GET['view']) ? $_GET['view'] : '';
           <!-- Hiển thị danh sách Challenge -->
           <h2>Danh sách Challenge</h2>
           <?php
-            // Ví dụ: Lấy danh sách challenge
             $sql_challenge = "SELECT * FROM challenges ORDER BY created_at DESC";
             $result_challenge = $conn->query($sql_challenge);
             
             if ($result_challenge && $result_challenge->num_rows > 0):
           ?>
-            <table class="challenge-table">
+            <table>
               <tr>
                 <th>ID</th>
                 <th>Gợi ý</th>
                 <th>Thao tác</th>
+                <th>Status</th>
+          
               </tr>
               <?php while ($row_ch = $result_challenge->fetch_assoc()): ?>
                 <tr>
                   <td><?php echo htmlspecialchars($row_ch['id']); ?></td>
                   <td><?php echo nl2br(htmlspecialchars($row_ch['challenge_hint'])); ?></td>
                   <td>
-                    <!-- Link sang trang solve challenge, ví dụ: challenge_solve.php?challenge_id= -->
-                    <a class="button" href="challenge_solve.php?challenge_id=<?php echo $row_ch['id']; ?>">
-                      Giải Challenge
-                    </a>
+                    <a class="button" href="challenge_solve.php?challenge_id=<?php echo $row_ch['id']; ?>">Giải Challenge</a>
+                  </td>
+                  
+                  <?php
+                    $stmt = $conn->prepare("SELECT * FROM challenge_attempts WHERE challenge_id = ? AND student_id = ? AND is_correct = ?");
+                    $status = TRUE;
+                    $stmt->bind_param("iii", $row_ch['id'], $_SESSION['user']['id'], $status);
+                    $stmt->execute();
+                    $stmt->bind_result($id, $challenge_id, $student_id, $submitted_answer, $submitted_at, $is_correct);
+                    $status = FALSE;
+                    while ($stmt->fetch()) {
+                      if($is_correct == 1) {
+                        $status = $is_correct;
+                      }
+                    }
+                    
+                  ?>
+                  <td class="status <?php echo ($status) ? 'correct' : 'incorrect'; ?>">
+                    <?php
+                      if($status) {
+                        echo "Done!";
+                      }
+                      else {
+
+                      }
+                    ?>
                   </td>
                 </tr>
               <?php endwhile; ?>
@@ -189,9 +250,9 @@ $view = isset($_GET['view']) ? $_GET['view'] : '';
         <h2>Công cụ quản lý</h2>
         <ul class="management-list">
           <li><a class="button" href="teacher_assignments.php">Giao bài tập</a></li>
-          <li><a class="button" href="manage_student.php">Quản lý sinh viên</a></li>
+          <li><a class="button" href="manage_student.php">Quản lý SV</a></li>
           <li><a class="button" href="teacher_view_submissions.php">Xem bài làm</a></li>
-          <li><a class="button" href="teacher_challenges.php">Challenges</a></li>
+          <li><a class="button" href="teacher_challenges.php">Tạo Challenge</a></li>
           <!-- Bạn có thể thêm các link khác theo nhu cầu -->
         </ul>
       <?php endif; ?>
